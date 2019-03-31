@@ -3,6 +3,7 @@ import 'package:four_some/services/authentication.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:four_some/models/todo.dart';
 import 'dart:async';
+import 'package:four_some/pages/form.dart';
 
 class HomePage extends StatefulWidget {
   HomePage({Key key, this.auth, this.userId, this.onSignedOut})
@@ -264,6 +265,7 @@ class _HomePageState extends State<HomePage> {
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
             _showDialog(context);
+
           },
           icon: Icon(Icons.add),
           label: Text("Add Event"),
