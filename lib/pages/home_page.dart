@@ -264,8 +264,8 @@ class _HomePageState extends State<HomePage> {
         body: _showTodoList(),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
-            _showDialog(context);
-
+//            _showDialog(context);
+            Navigator.push( context, MaterialPageRoute(builder: (context) => MyApp()), );
           },
           icon: Icon(Icons.add),
           label: Text("Add Event"),

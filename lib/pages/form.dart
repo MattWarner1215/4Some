@@ -7,15 +7,13 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final appTitle = 'Form Validation Demo';
 
-    return MaterialApp(
-      title: appTitle,
-      home: Scaffold(
+    return new Scaffold(
         appBar: AppBar(
           title: Text(appTitle),
         ),
         body: MyCustomForm(),
-      ),
-    );
+      );
+
   }
 }
 
@@ -71,3 +69,5 @@ class MyCustomFormState extends State<MyCustomForm> {
     );
   }
 }
+
+
