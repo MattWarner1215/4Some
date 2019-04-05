@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:four_some/models/form_entry.dart';
-import 'package:four_some/pages/home_page.dart';
+import 'package:four_some/pages/contact_services.dart';
+import 'Contact.dart';
 
-import 'package:four_some/models/todo.dart';
+Contact newContact = new Contact("name","phone", "email");
 
 class MyApp extends StatelessWidget {
   @override
@@ -18,12 +18,12 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+
 final mainReference = FirebaseDatabase.instance.reference();
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
   final String title;
-
   String get phone => null;
 
   @override
@@ -35,9 +35,43 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> _colors = <String>['', 'red', 'green', 'blue', 'orange'];
   String _color = '';
 
+  void _submitForm() {
+    final FormState form = _formKey.currentState;
+
+    if (!form.validate()) {
+      showMessage('Form is not valid!  Please review and correct.');
+    } else {
+      form.save(); //This invokes each onSaved event
+
+      print('Form save called, newContact is now up to date...');
+      print('Email: ${newContact.name}');
+      print('Dob: ${newContact.dob}');
+      print('Phone: ${newContact.phone}');
+      print('Email: ${newContact.email}');
+      print('Favorite Color: ${newContact.favoriteColor}');
+      print('========================================');
+      print('Submitting to back end...');
+      var contactService = new ContactService();
+      contactService.createContact(newContact)
+          .then((value) =>
+          showMessage('New contact created for ${value.name}!', Colors.blue)
+      );
+    }
+  }
+  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+
+  void showMessage(String message, [MaterialColor color = Colors.red]) {
+    _scaffoldKey.currentState
+        .showSnackBar(new SnackBar(backgroundColor: color, content: new Text(message)));
+  }
+
+  final FirebaseDatabase _database = FirebaseDatabase.instance;
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
+      key: _scaffoldKey,
       appBar: new AppBar(
         title: new Text(widget.title),
       ),
@@ -56,6 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       hintText: 'Enter your first and last name',
                       labelText: 'Name',
                     ),
+                    onSaved: (val) => newContact.name = val,
                   ),
                   new TextFormField(
                     decoration: const InputDecoration(
@@ -66,12 +101,6 @@ class _MyHomePageState extends State<MyHomePage> {
                     keyboardType: TextInputType.datetime,
                   ),
                   new TextFormField(
-                    onFieldSubmitted: (String phoneItem){
-                      if (phoneItem.length > 0) {
-                        FormEntry phone = new FormEntry(phoneItem.toString(),widget.phone, false);
-                        mainReference.reference().child("todo").push().set(phone.toJson());
-                      }
-                    },
                     decoration: const InputDecoration(
                       icon: const Icon(Icons.phone),
                       hintText: 'Enter a phone number',
@@ -81,15 +110,16 @@ class _MyHomePageState extends State<MyHomePage> {
                     inputFormatters: [
                       WhitelistingTextInputFormatter.digitsOnly,
                     ],
-
+                    onSaved: (val) => newContact.phone = val,
                   ),
-                  new TextFormField (
+                  new TextFormField(
                     decoration: const InputDecoration(
                       icon: const Icon(Icons.email),
                       hintText: 'Enter a email address',
                       labelText: 'Email',
                     ),
                     keyboardType: TextInputType.emailAddress,
+                    onSaved: (val) => newContact.email = val,
                   ),
                   new FormField(
                     builder: (FormFieldState state) {
@@ -127,11 +157,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       child: new RaisedButton(
                         child: const Text('Submit'),
                         onPressed: () {
-                          mainReference.push().set(.toJson());
+                          _submitForm();
                         },
                       )),
+
                 ],
+
               ))),
+
     );
+
   }
 }

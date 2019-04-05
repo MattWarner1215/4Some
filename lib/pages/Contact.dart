@@ -1,27 +1,32 @@
+
 import 'package:firebase_database/firebase_database.dart';
 
-class FormEntry {
-  String phone ='';
-  String key;
+class Contact {
   String name;
-  String email ='';
-  String userId;
+  DateTime dob;
+  String phone = '';
+  String email = '';
+  String favoriteColor = '';
 
-  FormEntry(this.name, this.userId, this.email, this.phone);
 
-  FormEntry.fromSnapshot(DataSnapshot snapshot) :
-        key = snapshot.key,
-        userId = snapshot.value["userId"],
+  Contact(this.name, this.email, this.phone);
+
+  Contact.fromSnapshot(DataSnapshot snapshot) :
+
         name = snapshot.value["name"],
         email = snapshot.value["email"],
         phone = snapshot.value["phone"];
 
   toJson() {
     return {
-      "userId": userId,
+
       "name": name,
       "email": email,
       "phone": phone,
     };
   }
+
+
+
 }
+
