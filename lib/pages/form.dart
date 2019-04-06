@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:four_some/pages/contact_services.dart';
-import 'Contact.dart';
 
-Contact newContact = new Contact("name","phone", "email");
+import 'dart:async';
+import 'package:intl/intl.dart';
 
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: '4Some',
       theme: new ThemeData(
         primarySwatch: Colors.lightGreen,
@@ -18,8 +18,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-final mainReference = FirebaseDatabase.instance.reference();
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
@@ -32,41 +30,63 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final GlobalKey<FormState> _formKey = new GlobalKey<FormState>();
-  List<String> _colors = <String>['', 'red', 'green', 'blue', 'orange'];
-  String _color = '';
 
-  void _submitForm() {
-    final FormState form = _formKey.currentState;
-
-    if (!form.validate()) {
-      showMessage('Form is not valid!  Please review and correct.');
-    } else {
-      form.save(); //This invokes each onSaved event
-
-      print('Form save called, newContact is now up to date...');
-      print('Email: ${newContact.name}');
-      print('Dob: ${newContact.dob}');
-      print('Phone: ${newContact.phone}');
-      print('Email: ${newContact.email}');
-      print('Favorite Color: ${newContact.favoriteColor}');
-      print('========================================');
-      print('Submitting to back end...');
-      var contactService = new ContactService();
-      contactService.createContact(newContact)
-          .then((value) =>
-          showMessage('New contact created for ${value.name}!', Colors.blue)
-      );
-    }
-  }
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
 
   void showMessage(String message, [MaterialColor color = Colors.red]) {
-    _scaffoldKey.currentState
-        .showSnackBar(new SnackBar(backgroundColor: color, content: new Text(message)));
+    _scaffoldKey.currentState.showSnackBar(
+        new SnackBar(backgroundColor: color, content: new Text(message)));
   }
 
-  final FirebaseDatabase _database = FirebaseDatabase.instance;
-  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
+  //Date of Birth Validation and Picker
+
+  final TextEditingController _controller = new TextEditingController();
+  Future _chooseDate(BuildContext context, String initialDateString) async {
+    var now = new DateTime.now();
+    var initialDate = convertToDate(initialDateString) ?? now;
+    initialDate = (initialDate.year >= 1900 && initialDate.isBefore(now)
+        ? initialDate
+        : now);
+
+    var result = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: new DateTime(1900),
+        lastDate: new DateTime.now());
+
+    if (result == null) return;
+
+    setState(() {
+      _controller.text = new DateFormat.yMd().format(result);
+    });
+  }
+
+  DateTime convertToDate(String input) {
+    try {
+      var d = new DateFormat.yMd().parseStrict(input);
+      return d;
+    } catch (e) {
+      return null;
+    }
+  }
+
+
+  bool isValidDob(String dob) {
+    if (dob.isEmpty) return true;
+    var d = convertToDate(dob);
+    return d != null && d.isBefore(new DateTime.now());
+  }
+//Phone Number validation
+  bool isValidPhoneNumber(String input) {
+    final RegExp regex = new RegExp(r'^\(\d\d\d\)\d\d\d\-\d\d\d\d$');
+    return regex.hasMatch(input);
+  }
+//Email Validation
+  bool isValidEmail(String input) {
+    final RegExp regex = new RegExp(
+        r"^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,253}[a-zA-Z0-9])?)*$");
+    return regex.hasMatch(input);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,16 +110,30 @@ class _MyHomePageState extends State<MyHomePage> {
                       hintText: 'Enter your first and last name',
                       labelText: 'Name',
                     ),
-                    onSaved: (val) => newContact.name = val,
+                    inputFormatters: [new LengthLimitingTextInputFormatter(30)],
+                    validator: (val) => val.isEmpty ? 'Name is required' : null,
                   ),
-                  new TextFormField(
-                    decoration: const InputDecoration(
-                      icon: const Icon(Icons.calendar_today),
-                      hintText: 'Enter your date of birth',
-                      labelText: 'Dob',
-                    ),
-                    keyboardType: TextInputType.datetime,
-                  ),
+                  new Row(children: <Widget>[
+                    new Expanded(
+                        child: new TextFormField(
+                      decoration: new InputDecoration(
+                        icon: const Icon(Icons.calendar_today),
+                        hintText: 'Enter your date of birth',
+                        labelText: 'Dob',
+                      ),
+                      controller: _controller,
+                      keyboardType: TextInputType.datetime,
+                      validator: (val) =>
+                          isValidDob(val) ? null : 'Not a valid date',
+                    )),
+                    new IconButton(
+                      icon: new Icon(Icons.more_horiz),
+                      tooltip: 'Choose date',
+                      onPressed: (() {
+                        _chooseDate(context, _controller.text);
+                      }),
+                    )
+                  ]),
                   new TextFormField(
                     decoration: const InputDecoration(
                       icon: const Icon(Icons.phone),
@@ -107,10 +141,13 @@ class _MyHomePageState extends State<MyHomePage> {
                       labelText: 'Phone',
                     ),
                     keyboardType: TextInputType.phone,
+                    validator: (value) => isValidPhoneNumber(value)
+                        ? null
+                        : 'Phone number must be entered as (###)###-####',
                     inputFormatters: [
-                      WhitelistingTextInputFormatter.digitsOnly,
+                      new WhitelistingTextInputFormatter(
+                          new RegExp(r'^[()\d -]{1,15}$')),
                     ],
-                    onSaved: (val) => newContact.phone = val,
                   ),
                   new TextFormField(
                     decoration: const InputDecoration(
@@ -118,54 +155,19 @@ class _MyHomePageState extends State<MyHomePage> {
                       hintText: 'Enter a email address',
                       labelText: 'Email',
                     ),
+                    validator: (value) => isValidEmail(value)
+                        ? null
+                        : 'Please enter a valid email address',
                     keyboardType: TextInputType.emailAddress,
-                    onSaved: (val) => newContact.email = val,
-                  ),
-                  new FormField(
-                    builder: (FormFieldState state) {
-                      return InputDecorator(
-                        decoration: InputDecoration(
-                          icon: const Icon(Icons.color_lens),
-                          labelText: 'Color',
-                        ),
-                        isEmpty: _color == '',
-                        child: new DropdownButtonHideUnderline(
-                          child: new DropdownButton(
-                            value: _color,
-                            isDense: true,
-                            onChanged: (String newValue) {
-                              setState(() {
-                                var newContact;
-                                newContact.favoriteColor = newValue;
-                                _color = newValue;
-                                state.didChange(newValue);
-                              });
-                            },
-                            items: _colors.map((String value) {
-                              return new DropdownMenuItem(
-                                value: value,
-                                child: new Text(value),
-                              );
-                            }).toList(),
-                          ),
-                        ),
-                      );
-                    },
                   ),
                   new Container(
                       padding: const EdgeInsets.only(left: 40.0, top: 20.0),
                       child: new RaisedButton(
                         child: const Text('Submit'),
-                        onPressed: () {
-                          _submitForm();
-                        },
+                        onPressed: () {},
                       )),
-
                 ],
-
               ))),
-
     );
-
   }
 }
