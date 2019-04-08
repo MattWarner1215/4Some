@@ -29,9 +29,16 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final GlobalKey<FormState> _formKey = new GlobalKey<FormState>();
 
+  final GlobalKey<FormState> _formKey = new GlobalKey<FormState>();
   final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  String _dob;
+  String _email;
+  String _phone;
+  String _name;
+  final FocusNode _phoneFocus = FocusNode();
+
+
 
   void showMessage(String message, [MaterialColor color = Colors.red]) {
     _scaffoldKey.currentState.showSnackBar(
@@ -70,7 +77,6 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-
   bool isValidDob(String dob) {
     if (dob.isEmpty) return true;
     var d = convertToDate(dob);
@@ -88,8 +94,12 @@ class _MyHomePageState extends State<MyHomePage> {
     return regex.hasMatch(input);
   }
 
+
   @override
   Widget build(BuildContext context) {
+
+
+
     return new Scaffold(
       key: _scaffoldKey,
       appBar: new AppBar(
@@ -112,6 +122,10 @@ class _MyHomePageState extends State<MyHomePage> {
                     ),
                     inputFormatters: [new LengthLimitingTextInputFormatter(30)],
                     validator: (val) => val.isEmpty ? 'Name is required' : null,
+                    onSaved: (String val) {
+                      _name =val;
+                      print (_name);
+                    },
                   ),
                   new Row(children: <Widget>[
                     new Expanded(
@@ -125,6 +139,11 @@ class _MyHomePageState extends State<MyHomePage> {
                       keyboardType: TextInputType.datetime,
                       validator: (val) =>
                           isValidDob(val) ? null : 'Not a valid date',
+                          onSaved: (String val){
+                        _dob =val;
+                        print(_dob);
+
+                          },
                     )),
                     new IconButton(
                       icon: new Icon(Icons.more_horiz),
@@ -141,6 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       labelText: 'Phone',
                     ),
                     keyboardType: TextInputType.phone,
+
                     validator: (value) => isValidPhoneNumber(value)
                         ? null
                         : 'Phone number must be entered as (###)###-####',
@@ -148,6 +168,13 @@ class _MyHomePageState extends State<MyHomePage> {
                       new WhitelistingTextInputFormatter(
                           new RegExp(r'^[()\d -]{1,15}$')),
                     ],
+                    onSaved: (val){
+                      _phone =val;
+                      print(_phone);
+
+
+                    },
+
                   ),
                   new TextFormField(
                     decoration: const InputDecoration(
@@ -158,13 +185,26 @@ class _MyHomePageState extends State<MyHomePage> {
                     validator: (value) => isValidEmail(value)
                         ? null
                         : 'Please enter a valid email address',
+                    onSaved: (String value){
+                    _email =value;
+                    print(_email);
+                    },
                     keyboardType: TextInputType.emailAddress,
                   ),
+
                   new Container(
                       padding: const EdgeInsets.only(left: 40.0, top: 20.0),
                       child: new RaisedButton(
                         child: const Text('Submit'),
-                        onPressed: () {},
+                        onPressed: ( ) {
+
+                          if (this._formKey.currentState.validate()) {
+                          _formKey.currentState.save(); // Save our form now.
+
+                          print('Printing the login data.');
+                          print(_name);
+
+                        }}
                       )),
                 ],
               ))),
